@@ -252,6 +252,7 @@ vcpkg_configure_cmake(
         -DOPENCV_CONFIG_INSTALL_PATH=share/opencv
         -DOPENCV_FFMPEG_USE_FIND_PACKAGE=FFMPEG
         -DCMAKE_DEBUG_POSTFIX=d
+        -DCPU_BASELINE=AVX
         ###### Ungrouped Entries
         -DBUILD_opencv_java=OFF
         -Dade_DIR=${ADE_DIR}
