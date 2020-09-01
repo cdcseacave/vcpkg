@@ -9,6 +9,7 @@ vcpkg_from_github(
     PATCHES
         dont-export-symbols-in-static-build.patch
         fix-arm-builds.patch
+        fix-mingw-build.patch
 )
 
 if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
@@ -17,14 +18,18 @@ else()
     set(OPENAL_LIBTYPE "STATIC")
 endif()
 
+set(ALSOFT_REQUIRE_LINUX OFF)
+set(ALSOFT_REQUIRE_WINDOWS OFF)
+set(ALSOFT_REQUIRE_OSX OFF)
+
 if(VCPKG_TARGET_IS_LINUX)
-    set(ALSOFT_REQUIRE_WINDOWS OFF)
     set(ALSOFT_REQUIRE_LINUX ON)
 endif()
-
 if(VCPKG_TARGET_IS_WINDOWS)
     set(ALSOFT_REQUIRE_WINDOWS ON)
-    set(ALSOFT_REQUIRE_LINUX OFF)
+endif()
+if(VCPKG_TARGET_IS_OSX)
+    set(ALSOFT_REQUIRE_OSX ON)
 endif()
 
 vcpkg_configure_cmake(
@@ -45,7 +50,7 @@ vcpkg_configure_cmake(
         -DALSOFT_BACKEND_QSA=OFF
         -DALSOFT_BACKEND_PORTAUDIO=OFF
         -DALSOFT_BACKEND_PULSEAUDIO=OFF
-        -DALSOFT_BACKEND_COREAUDIO=OFF
+        -DALSOFT_BACKEND_COREAUDIO=${ALSOFT_REQUIRE_OSX}
         -DALSOFT_BACKEND_JACK=OFF
         -DALSOFT_BACKEND_OPENSL=OFF
         -DALSOFT_BACKEND_WAVE=ON
@@ -53,6 +58,7 @@ vcpkg_configure_cmake(
         -DALSOFT_REQUIRE_DSOUND=${ALSOFT_REQUIRE_WINDOWS}
         -DALSOFT_REQUIRE_MMDEVAPI=${ALSOFT_REQUIRE_WINDOWS}
         -DALSOFT_CPUEXT_NEON=OFF
+        -DCMAKE_DISABLE_FIND_PACKAGE_WindowsSDK=ON
 )
 
 vcpkg_install_cmake()
@@ -70,5 +76,6 @@ endforeach()
 
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
 file(INSTALL ${SOURCE_PATH}/COPYING DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+file(COPY ${CMAKE_CURRENT_LIST_DIR}/usage DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT})
 
 vcpkg_copy_pdbs()
