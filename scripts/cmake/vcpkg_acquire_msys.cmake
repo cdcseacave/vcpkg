@@ -185,7 +185,7 @@ function(vcpkg_acquire_msys PATH_TO_ROOT_OUT)
     msys_package(
         URL "https://repo.msys2.org/msys/x86_64/libtool-2.4.6-9-x86_64.pkg.tar.xz"
         SHA512 b309799e5a9d248ef66eaf11a0bd21bf4e8b9bd5c677c627ec83fa760ce9f0b54ddf1b62cbb436e641fbbde71e3b61cb71ff541d866f8ca7717a3a0dbeb00ebf
-        DEPS grep sed coreutils file 
+        DEPS grep sed coreutils file findutils
     )
     msys_package(
         URL "https://repo.msys2.org/msys/x86_64/file-5.39-1-x86_64.pkg.tar.zst"
@@ -291,8 +291,8 @@ function(vcpkg_acquire_msys PATH_TO_ROOT_OUT)
         DEPS gcc-libs
     )
     msys_package(
-        URL "https://repo.msys2.org/msys/x86_64/pkg-config-0.29.2-1-x86_64.pkg.tar.xz"
-        SHA512 f1d70f0b4ebcfeb3fa2156a7a4f7b0b404795853e05361de14054dc6658a6154915bb982626cbfe76bef0828325f993f30da6817361ca8d7ea440a40023fa864
+        URL "https://repo.msys2.org/msys/x86_64/pkg-config-0.29.2-4-x86_64.pkg.tar.zst"
+        SHA512 9f72c81d8095ca1c341998bc80788f7ce125770ec4252f1eb6445b9cba74db5614caf9a6cc7c0fcc2ac18d4a0f972c49b9f245c3c9c8e588126be6c72a8c1818
         DEPS libiconv
     )
     msys_package(
