@@ -1,30 +1,90 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO mborgerding/kissfft
-    REF 3f3fc6ab55da8610aba7fe89dcda09cf3a31f4e6
-    SHA512 5d3781a82d067cebd0a20c6b35a2d806598ba66f3bbf282c49a2ac9a6d09e1307dca1f8bc5fcc4c5955dc2f66aa94ca4dcfe00e6b31ea4694aa9d507f194554e
+    REF "${VERSION}"
+    SHA512 bd715868ce0e93a291a0592fb1f8b960e832fc64efe863755e52b67d5addff9bcb444a1bf2570d1914c52b41dad1023d0d86400f5ea30c9fb84cd6b4f7210708
     HEAD_REF master
+    PATCHES
+        fix-install-dirs.patch
+        fix-linkage.patch
 )
 
-file(COPY ${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt DESTINATION ${SOURCE_PATH})
-file(COPY ${CMAKE_CURRENT_LIST_DIR}/exports.def DESTINATION ${SOURCE_PATH})
+string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "static" KISSFFT_STATIC)
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
-    OPTIONS_DEBUG
-        -DKF_INSTALL_HEADERS=OFF
-    OPTIONS_RELEASE
-        -DKF_INSTALL_HEADERS=ON
+vcpkg_check_features(
+    OUT_FEATURE_OPTIONS FEATURE_OPTIONS
+    FEATURES
+        openmp KISSFFT_OPENMP
+        tools  KISSFFT_TOOLS
 )
 
-vcpkg_install_cmake()
+if("tools" IN_LIST FEATURES)
+    vcpkg_find_acquire_program(PKGCONFIG)
+endif()
 
-vcpkg_copy_pdbs()
+set(datatypes float double int16_t int32_t)
 
-vcpkg_fixup_cmake_targets(
-    CONFIG_PATH lib/cmake/unofficial-${PORT}
-    TARGET_PATH share/unofficial-${PORT}
-)
+foreach(datatype IN LISTS datatypes)
+    vcpkg_cmake_configure(
+        SOURCE_PATH ${SOURCE_PATH}
+        OPTIONS
+            -DKISSFFT_DATATYPE=${datatype}
+            -DKISSFFT_PKGCONFIG=ON
+            -DKISSFFT_TEST=OFF
+            -DKISSFFT_STATIC=${KISSFFT_STATIC}
+            ${FEATURE_OPTIONS}
+        LOGFILE_BASE "config-${TARGET_TRIPLET}-${datatype}"
+    )
 
-file(INSTALL ${SOURCE_PATH}/COPYING DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+    vcpkg_cmake_build(
+        LOGFILE_BASE "install-${TARGET_TRIPLET}-${datatype}"
+        TARGET install
+    )
+
+    vcpkg_cmake_config_fixup(CONFIG_PATH "lib/cmake/kissfft")
+
+    vcpkg_copy_pdbs()
+endforeach()
+
+vcpkg_fixup_pkgconfig()
+
+if("tools" IN_LIST FEATURES)
+    set(tool_names)
+
+    foreach(datatype IN LISTS datatypes)
+        if("openmp" IN_LIST FEATURES)
+            list(APPEND tool_names
+                "fastconv-${datatype}-openmp"
+                "fastconvr-${datatype}-openmp"
+                "fft-${datatype}-openmp"
+                "psdpng-${datatype}-openmp"
+            )
+        else()
+            list(APPEND tool_names
+                "fastconv-${datatype}"
+                "fastconvr-${datatype}"
+                "fft-${datatype}"
+                "psdpng-${datatype}"
+            )
+        endif()
+    endforeach()
+
+    vcpkg_copy_tools(
+        TOOL_NAMES ${tool_names}
+        AUTO_CLEAN
+    )
+endif()
+
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+
+if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
+    vcpkg_replace_string(
+        "${CURRENT_PACKAGES_DIR}/include/kissfft/kiss_fft.h"
+        "#ifdef KISS_FFT_SHARED"
+        "#if 1 //#ifdef KISS_FFT_SHARED"
+    )
+endif()
+
+file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/usage" DESTINATION "${CURRENT_PACKAGES_DIR}/share/kissfft")
+
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/COPYING")

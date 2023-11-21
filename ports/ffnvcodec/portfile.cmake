@@ -1,9 +1,8 @@
-# Get nvcodec
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO FFmpeg/nv-codec-headers
-    REF 5ee2ae591f74f53bd6028344f8690f1558a1f17a # 10.0.26.0
-    SHA512 f9d40a44f85016f0f76c7f630c3defb2e94858b43ae714adae546842c2801f51358b7c2b3326952e7aeb25f5b1611af4eee3024f495eaaaecbfd31851cc7edca
+    REF "n${VERSION}"
+    SHA512 386e4e1e0606a5ebd95c0ca60a2cdbadd1e24ac64df65f707dd00ee1fc822f56535637eaf4a375dd25f2f91fb00ffabb95953a1bab9fc101d1c522e2954f37c0
     HEAD_REF master
 )
 
@@ -30,7 +29,7 @@ if(VCPKG_TARGET_IS_WINDOWS)
         LOGNAME build-${TARGET_TRIPLET}
     )
     
-    file(INSTALL ${SOURCE_PATH}/ffnvcodec.pc DESTINATION ${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig)
+    file(INSTALL "${SOURCE_PATH}/ffnvcodec.pc" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig")
 
 # Linux, etc.
 else()
@@ -47,12 +46,12 @@ else()
 
     # FFmpeg uses pkgconfig to find ffnvcodec.pc, so install it where 
     # FFMpeg's call to pkgconfig expects to find it.
-    file(INSTALL ${SOURCE_PATH}/ffnvcodec.pc DESTINATION ${CURRENT_PACKAGES_DIR}/lib/pkgconfig)
-    file(INSTALL ${SOURCE_PATH}/ffnvcodec.pc DESTINATION ${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig)
+    file(INSTALL "${SOURCE_PATH}/ffnvcodec.pc" DESTINATION "${CURRENT_PACKAGES_DIR}/lib/pkgconfig")
+    file(INSTALL "${SOURCE_PATH}/ffnvcodec.pc" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig")
 endif()
 
-# Install the files to their default vcpkg locations
-file(INSTALL ${SOURCE_PATH}/include DESTINATION ${CURRENT_PACKAGES_DIR})
-file(INSTALL ${CURRENT_PORT_DIR}/copyright DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT})
-
 vcpkg_fixup_pkgconfig()
+
+# Install the files to their default vcpkg locations
+file(INSTALL "${SOURCE_PATH}/include" DESTINATION "${CURRENT_PACKAGES_DIR}")
+file(INSTALL "${CURRENT_PORT_DIR}/copyright" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}")

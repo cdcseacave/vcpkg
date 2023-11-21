@@ -11,16 +11,15 @@ vcpkg_from_github(
 string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "dynamic" BUILD_DYNAMIC_LIBS)
 string(COMPARE EQUAL "${VCPKG_CRT_LINKAGE}" "static" BUILD_STATIC_CRT)
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
         -DBUILD_SHARED_LIBS=${BUILD_DYNAMIC_LIBS}
         -DBUILD_STATIC_RUNTIME=${BUILD_STATIC_CRT}
         -DBUILD_APPS=OFF
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
 
 if(WIN32)
 	vcpkg_fixup_cmake_targets(CONFIG_PATH "CMake")

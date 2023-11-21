@@ -1,8 +1,16 @@
 {
   "name": "mpir",
-  "version-string": "3.0.0",
-  "port-version": 10,
+  "version-date": "2022-03-02",
+  "port-version": 3,
   "description": "Multiple Precision Integers and Rationals",
   "homepage": "https://github.com/wbhart/mpir",
-  "supports": "!(uwp | arm)"
+  "license": null,
+  "supports": "!(uwp | arm)",
+  "dependencies": [
+    {
+      "name": "vcpkg-msbuild",
+      "host": true,
+      "platform": "windows"
+    }
+  ]
 }

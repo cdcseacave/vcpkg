@@ -1,33 +1,25 @@
-if(NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
-    message(FATAL_ERROR "This port currently only supports x64 architecture")
-endif()
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO arrayfire/forge
-    REF 1a0f0cb6371a8c8053ab5eb7cbe3039c95132389 # v1.0.5
-    SHA512 8f8607421880a0f0013380eb5efb3a4f05331cd415d68c9cd84dd57eb727da1df6223fc6d65b106675d6aa09c3388359fab64443c31fadadf7641161be6b3b89
+    REF v1.0.8
+    SHA512 08e5eb89d80f7fa3310f0eb37481492b5c1dfff00b33c308169862d8b25cf93ad1d9c0db78667c0207a7f6f8ca4046c196bd3a987af839ea1864b49c738ee8e3
     HEAD_REF master
-	PATCHES fix-static_build.patch
+    PATCHES cmake_config.patch
 )
+file(REMOVE "${SOURCE_PATH}/CMakeModules/FindOpenGL.cmake")
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
         -DFG_BUILD_DOCS=OFF
         -DFG_BUILD_EXAMPLES=OFF
         -DFG_INSTALL_BIN_DIR=bin
-        -DFG_WITH_FREEIMAGE=OFF
+        -DFG_INSTALL_CMAKE_DIR=share/forge
 )
 
-vcpkg_install_cmake()
-
-if (VCPKG_TARGET_IS_WINDOWS)
-    vcpkg_fixup_cmake_targets(CONFIG_PATH cmake)
-else()
-    vcpkg_fixup_cmake_targets(CONFIG_PATH share/Forge/cmake)
-endif()
+vcpkg_cmake_install()
+vcpkg_cmake_config_fixup()
 
 file(GLOB DLLS ${CURRENT_PACKAGES_DIR}/bin/* ${CURRENT_PACKAGES_DIR}/debug/bin/*)
 list(FILTER DLLS EXCLUDE REGEX "forge\\.dll\$")
@@ -39,4 +31,4 @@ file(REMOVE_RECURSE
     ${DLLS}
 )
 
-file(INSTALL ${SOURCE_PATH}/.github/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/.github/LICENSE")

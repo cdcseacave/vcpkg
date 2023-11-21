@@ -1,39 +1,43 @@
-vcpkg_fail_port_install(ON_ARCH "arm" ON_TARGET "uwp")
-
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO ThePhD/infoware
-    REF v0.5.5
-    SHA512 06aea2c3a51df30cfc220eafb603620c3cf5f00b0d5935486ac46c6c2333972910af2b53fc1e2187b5fce0aa9650323a0dff526d768ff54888bfc549a8173903
+    REF d64a0c948593c0555115f60c79225c0b9ae09510
+    SHA512 3794cb78a1422bfc065037abbae81259e6061ba7b12ebd7b88581118e8eeebaf92d80cf7793b0f9f1da6754baf52835a6891663593dd0b0a38009a9cb141082b
     HEAD_REF master
+    PATCHES
+        cross-build.diff
 )
 
 vcpkg_check_features(
     OUT_FEATURE_OPTIONS FEATURE_OPTIONS
-    x11 INFOWARE_USE_X11
-    d3d INFOWARE_USE_D3D
-    opencl INFOWARE_USE_OPENCL
-    opengl INFOWARE_USE_OPENGL
+    FEATURES
+        d3d     INFOWARE_USE_D3D
+        opencl  INFOWARE_USE_OPENCL
+        opengl  INFOWARE_USE_OPENGL
+        x11     INFOWARE_USE_X11
 )
 
-# git must be injected, because vcpkg isolates the build
-# from the environment entirely to have reproducible builds
-vcpkg_find_acquire_program(GIT)
+if(VCPKG_CROSSCOMPILING)
+    list(APPEND FEATURE_OPTIONS "-DHOST_PCI_DATA=${CURRENT_HOST_INSTALLED_DIR}/share/${PORT}/pci_data.hpp")
+else()
+    acquire_pciids(pciids_path)
+    list(APPEND FEATURE_OPTIONS "-DINFOWARE_PCI_IDS_PATH=${pciids_path}")
+endif()
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
         ${FEATURE_OPTIONS}
         -DINFOWARE_EXAMPLES=OFF
         -DINFOWARE_TESTS=OFF
-        -DGIT_EXECUTABLE=${GIT}
-        -DGIT_FOUND=true
+        -DCMAKE_DISABLE_FIND_PACKAGE_Git=1
 )
 
-vcpkg_install_cmake()
-vcpkg_fixup_cmake_targets()
+vcpkg_cmake_install()
+vcpkg_cmake_config_fixup()
 
-file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
-file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
-file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
+file(REMOVE_RECURSE
+    "${CURRENT_PACKAGES_DIR}/debug/include"
+    "${CURRENT_PACKAGES_DIR}/debug/share"
+)
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")

@@ -1,33 +1,34 @@
-vcpkg_fail_port_install(
-    ON_ARCH "arm"
-)
+if (VCPKG_HOST_IS_LINUX)
+    message(WARNING "gamedev-framework requires gcc version 8.3 or later.")
+endif()
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO GamedevFramework/gf
     HEAD_REF master
-    REF v0.18.1
-    SHA512 7d027bc9c56ad60e242f44c40e79039a0b95fb01b805cba529089a9a7e4e3ca79986d05f6906653065b96cc39d9d9e79aeafb72524453508468a30d6cf7609cf
+    REF v1.2.0
+    SHA512 2043d0b015af7127887df44a9e2e035000c93c20a713d7297736fb05e46923684e330c7a541a115c110ea8737f0ddbfb0c0ef13498102732cfb2a4b243fd22cd
 )
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
-        -DGF_VCPKG=ON
         -DGF_USE_EMBEDDED_LIBS=OFF
         -DGF_BUILD_GAMES=OFF
         -DGF_BUILD_EXAMPLES=OFF
         -DGF_BUILD_DOCUMENTATION=OFF
-        -DGF_SINGLE_COMPILTATION_UNIT=ON
         -DBUILD_TESTING=OFF
+        -DCMAKE_UNITY_BUILD=ON
         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
     OPTIONS_RELEASE -DGF_DEBUG=OFF
     OPTIONS_DEBUG -DGF_DEBUG=ON
 )
 
-vcpkg_install_cmake()
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/gf TARGET_PATH share/gf)
+vcpkg_cmake_install()
+vcpkg_cmake_config_fixup(
+    PACKAGE_NAME gf
+    CONFIG_PATH lib/cmake/gf
+)
 vcpkg_copy_pdbs()
 
 file(REMOVE_RECURSE

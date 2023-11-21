@@ -1,31 +1,23 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO cisco/libsrtp
-    REF 56a065555aea2abddaf9fb60353fe59f277837a3
-    SHA512 59afa25df79f875d28eefe95ef89b5956b1d2f319bba38ec34b832c2faa16b5425aae2f6ad19cf478afe02b28f4032b5dcf20a301d647d897d4577f66ca77376
+    REF "v${VERSION}"
+    SHA512 bd679ab65ccf22ca30fe867b9649a0b84cfa6fad6e22eb10f081141632f6dd56479a04d525b865f11fd46007303ca211065d9c170e4820d6ea7055403702340a
+    PATCHES
+        fix-runtime-destination.patch
 )
 
-if (VCPKG_TARGET_IS_WINDOWS)
-  set(VCPKG_C_FLAGS "${VCPKG_C_FLAGS} -D_CRT_SECURE_NO_WARNINGS /wd4703")
-  set(VCPKG_CXX_FLAGS "${VCPKG_CXX_FLAGS} -D_CRT_SECURE_NO_WARNINGS /wd4703")
-endif()
-
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS
+        "-DCMAKE_PROJECT_INCLUDE=${CMAKE_CURRENT_LIST_DIR}/cmake-project-include.cmake"
+        -DTEST_APPS=OFF
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
 
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/libSRTP)
 
-if(EXISTS ${CURRENT_PACKAGES_DIR}/lib/srtp2.dll)
-    file(MAKE_DIRECTORY ${CURRENT_PACKAGES_DIR}/bin)
-    file(RENAME ${CURRENT_PACKAGES_DIR}/lib/srtp2.dll ${CURRENT_PACKAGES_DIR}/bin/srtp2.dll)
-endif()
-if(EXISTS ${CURRENT_PACKAGES_DIR}/debug/lib/srtp2.dll)
-    file(MAKE_DIRECTORY ${CURRENT_PACKAGES_DIR}/debug/bin)
-    file(RENAME ${CURRENT_PACKAGES_DIR}/debug/lib/srtp2.dll ${CURRENT_PACKAGES_DIR}/debug/bin/srtp2.dll)
-endif()
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
 
-file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/libsrtp RENAME copyright)
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")

@@ -1,4 +1,4 @@
-vcpkg_fail_port_install(ON_TARGET "UWP")
+message(WARNING "azure-storage-cpp is no longer actively developed. Instead, users should migrate to the new sdk:azure-core-cpp")
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
@@ -8,26 +8,26 @@ vcpkg_from_github(
     HEAD_REF master
 )
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}/Microsoft.WindowsAzure.Storage
-    PREFER_NINJA
+vcpkg_replace_string("${SOURCE_PATH}/Microsoft.WindowsAzure.Storage/CMakeLists.txt" [[file(GLOB OPENSSL_ROOT_DIR /usr/local/Cellar/openssl/*)]] "")
+
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}/Microsoft.WindowsAzure.Storage"
     OPTIONS
         -DCMAKE_FIND_FRAMEWORK=LAST
         -DBUILD_TESTS=OFF
         -DBUILD_SAMPLES=OFF
     OPTIONS_RELEASE
-        -DGETTEXT_LIB_DIR=${CURRENT_INSTALLED_DIR}/lib
+        "-DGETTEXT_LIB_DIR=${CURRENT_INSTALLED_DIR}/lib"
     OPTIONS_DEBUG
-        -DGETTEXT_LIB_DIR=${CURRENT_INSTALLED_DIR}/debug/lib
+        "-DGETTEXT_LIB_DIR=${CURRENT_INSTALLED_DIR}/debug/lib"
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
 
 file(INSTALL
-    ${SOURCE_PATH}/LICENSE.txt
-    DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+    "${SOURCE_PATH}/LICENSE.txt"
+    DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)
 file(REMOVE_RECURSE
-    ${CURRENT_PACKAGES_DIR}/debug/include)
+    "${CURRENT_PACKAGES_DIR}/debug/include")
 
 vcpkg_copy_pdbs()
-

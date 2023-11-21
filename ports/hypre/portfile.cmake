@@ -5,38 +5,34 @@ endif()
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO hypre-space/hypre
-    REF v2.19.0
-    SHA512 999979bc2e7d32aef7c084fc8508fb818e6f904db0ee3ebf6b8e8132f290201c407aaba0aa89e7bf09e7264f4e99caf04f3147458847de816fc8ffc81dbee2df
+    REF "v${VERSION}"
+    SHA512 fe92d09b56107845e3a4b7f0e7bbba5f319a7ebdaaecab3e6b89fae1fe2a79a9dd712806823ea518f5960f0eaa1088f6b82ebac63d3940478d36690f3adec4f2
     HEAD_REF master
 )
 
-if(VCPKG_LIBRARY_LINKAGE STREQUAL dynamic)
-  set(OPTIONS -DHYPRE_SHARED=ON)
-else()
-  set(OPTIONS -DHYPRE_SHARED=OFF)
-endif()
+string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "dynamic" HYPRE_SHARED)
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}/src
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}/src"
+    DISABLE_PARALLEL_CONFIGURE # See 'Autogenerate csr_spgemm_device_numer$ files'
     OPTIONS
-        ${OPTIONS}
+        -DHYPRE_SHARED=${HYPRE_SHARED}
         -DHYPRE_ENABLE_HYPRE_BLAS=OFF
         -DHYPRE_ENABLE_HYPRE_LAPACK=OFF
     OPTIONS_RELEASE
         -DHYPRE_BUILD_TYPE=Release
-        -DHYPRE_INSTALL_PREFIX=${CURRENT_PACKAGES_DIR}
+        "-DHYPRE_INSTALL_PREFIX=${CURRENT_PACKAGES_DIR}"
     OPTIONS_DEBUG
         -DHYPRE_BUILD_TYPE=Debug
-        -DHYPRE_INSTALL_PREFIX=${CURRENT_PACKAGES_DIR}/debug
+        "-DHYPRE_INSTALL_PREFIX=${CURRENT_PACKAGES_DIR}/debug"
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
 vcpkg_copy_pdbs()
 
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/HYPRE)
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/HYPRE)
 
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
 
 # Handle copyright
-file(INSTALL ${SOURCE_PATH}/COPYRIGHT DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+file(INSTALL "${SOURCE_PATH}/COPYRIGHT" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)

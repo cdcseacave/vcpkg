@@ -3,8 +3,8 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO boostorg/odeint
-    REF boost-1.75.0
-    SHA512 972afd04ca564aa1ac8d803d36b07ccf8fac7f3931e7c916c7459435313de13d511508793364d67e0aa19a79ba91c50ce4dc774ae2702142afdcb4b08de192e9
+    REF boost-1.83.0
+    SHA512 2c0bd72bfec74389fec86170ad0d739654be563d9fe3b2bd7297c5cf4ed9efbe94c4b15f277c83298f3cae21320574d1b7aa2ef158f6c4b342b153272360a353
     HEAD_REF master
 )
 

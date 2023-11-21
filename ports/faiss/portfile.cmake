@@ -1,34 +1,38 @@
-vcpkg_fail_port_install(ON_ARCH "x86" ON_TARGET "uwp" "osx")
-
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO facebookresearch/faiss
-    REF 0fb6c00cfa9487416b5cdf514f5f796476eecb06 # v1.6.4
-    SHA512 c7019615103fd29124c1f4458a47faebc5fe35545eea185c41cf643f2eabe82d134dc558c85f67faea7680c292abd7477ceefde157a7c3969eda78b77a23462b 
+    REF v1.7.4
+    SHA512 9622fb989cb2e1879450c2ad257cb55d0c0c639f54f0815e4781f4e4b2ae2f01779f5c8c0738ae9a29fde7e418587e6a92e91240d36c1ca051a6228bfb777638
     HEAD_REF master
+    PATCHES
+        fix-dependencies.patch
 )
 
 vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
-    gpu FAISS_ENABLE_GPU
+    FEATURES
+        gpu FAISS_ENABLE_GPU
 )
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+if ("${FAISS_ENABLE_GPU}")
+    if (NOT VCPKG_CMAKE_SYSTEM_NAME AND NOT ENV{CUDACXX})
+        set(ENV{CUDACXX} "$ENV{CUDA_PATH}/bin/nvcc.exe")
+    endif()
+endif()
+
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
         ${FEATURE_OPTIONS}
         -DFAISS_ENABLE_PYTHON=OFF  # Requires SWIG
+        -DBUILD_TESTING=OFF
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
 
-vcpkg_fixup_cmake_targets()
+vcpkg_cmake_config_fixup()
 
 vcpkg_copy_pdbs()
 
-file(INSTALL ${SOURCE_PATH}/LICENSE
-     DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT}
-     RENAME copyright
-)
+file(INSTALL "${SOURCE_PATH}/LICENSE" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)
 
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")

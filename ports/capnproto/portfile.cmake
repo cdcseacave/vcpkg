@@ -1,33 +1,40 @@
-vcpkg_fail_port_install(ON_TARGET UWP)
-if(VCPKG_TARGET_IS_WINDOWS)
-    vcpkg_fail_port_install(ON_ARCH arm arm64)
-endif()
-
 vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO capnproto/capnproto
-    REF 57a4ca5af5a7f55b768a9d9d6655250bffb1257f # v0.8.0
-    SHA512 6550356a40a13d41fbeef3887027de1134c4bc37e4d79435e67da1f65665f3856f7cd663be392135cf4a08fffcfd4e171614026c20bfc5727adfd624b2d33e35
+    REF v1.0.1
+    SHA512 189d8c483bded3889e903e3998d32d022b5a7bf45d519dc551dc9b2d7909a45a8816a09f4a817aa0fbb14c86c32b838a0c26457c2e89c33ec0eb93bbb93391c0
     HEAD_REF master
+    PATCHES
+        disable-C-20-co-routines.patch
+        undef-KJ_USE_EPOLL-for-ANDROID_PLATFORM-23.patch
 )
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
+    FEATURES
+        "openssl" OPENSSL_FEATURE
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS
+        -DBUILD_TESTING=OFF
+        "-DWITH_OPENSSL=${OPENSSL_FEATURE}"
+)
 
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/CapnProto)
+vcpkg_cmake_install()
+
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/CapnProto)
 
 vcpkg_copy_tools(TOOL_NAMES capnp capnpc-c++ capnpc-capnp AUTO_CLEAN)
 
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/bin)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/bin")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/bin")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
 
 # Handle copyright
-file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+file(INSTALL "${SOURCE_PATH}/LICENSE" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)
+
+vcpkg_fixup_pkgconfig()

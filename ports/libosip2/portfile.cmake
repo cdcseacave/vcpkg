@@ -1,28 +1,51 @@
-set(LIBOSIP2_VER "5.1.0")
-
 vcpkg_download_distfile(ARCHIVE
-    URLS "https://ftp.gnu.org/gnu/osip/libosip2-${LIBOSIP2_VER}.tar.gz" "https://www.mirrorservice.org/sites/ftp.gnu.org/gnu/osip/libosip2-${LIBOSIP2_VER}.tar.gz"
-    FILENAME "libosip2-${LIBOSIP2_VER}.tar.gz"
-    SHA512 391c9a0ea399f789d7061b0216d327eecba5bbf0429659f4f167604b9e703e1678ba6f58079aa4f84b3636a937064ecfb92e985368164fcb679e95654e43d65b
+    URLS "https://ftp.gnu.org/gnu/osip/libosip2-${VERSION}.tar.gz" "https://www.mirrorservice.org/sites/ftp.gnu.org/gnu/osip/libosip2-${VERSION}.tar.gz"
+    FILENAME "libosip2-${VERSION}.tar.gz"
+    SHA512 cd9db7a736cca90c6862b84c4941ef025f5affab8af9bbc02ce0dd3310a2c555e0922c1bfa72d8ac08791fa1441bbcc30b627d52ca8b51f3471573a10ac82a00
 )
 
-vcpkg_extract_source_archive_ex(
-    ARCHIVE ${ARCHIVE}
-    OUT_SOURCE_PATH SOURCE_PATH
+set(PATCHES)
+if(VCPKG_TARGET_IS_WINDOWS)
+    list(APPEND PATCHES fix-path-in-project.patch)
+endif()
+
+vcpkg_extract_source_archive(
+    SOURCE_PATH
+    ARCHIVE "${ARCHIVE}"
+    PATCHES ${PATCHES}
 )
 
 if(VCPKG_TARGET_IS_WINDOWS)
-    set(OPTIONS --enable-mt=no)
+    # Use /Z7 rather than /Zi to avoid "fatal error C1090: PDB API call failed, error code '23': (0x00000006)"
+    foreach(VCXPROJ IN ITEMS
+        "${SOURCE_PATH}/platform/vsnet/osip2.vcxproj"
+        "${SOURCE_PATH}/platform/vsnet/osipparser2.vcxproj")
+        vcpkg_replace_string(
+            "${VCXPROJ}"
+            "<DebugInformationFormat>ProgramDatabase</DebugInformationFormat>"
+            "<DebugInformationFormat>OldStyle</DebugInformationFormat>"
+        )
+    endforeach()
+
+    vcpkg_msbuild_install(
+        SOURCE_PATH "${SOURCE_PATH}"
+        PROJECT_SUBPATH "platform/vsnet/osip2.vcxproj"
+    )
+
+    file(COPY "${SOURCE_PATH}/include/" DESTINATION "${CURRENT_PACKAGES_DIR}/include" PATTERN Makefile.* EXCLUDE)
+
+    vcpkg_msbuild_install(
+        SOURCE_PATH "${SOURCE_PATH}"
+        PROJECT_SUBPATH "platform/vsnet/osipparser2.vcxproj"
+    )
+
+elseif(VCPKG_TARGET_IS_LINUX OR VCPKG_TARGET_IS_OSX)
+    vcpkg_configure_make(SOURCE_PATH "${SOURCE_PATH}")
+    vcpkg_install_make()
+    vcpkg_fixup_pkgconfig()
+
+    file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+    file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
 endif()
-vcpkg_configure_make(
-    SOURCE_PATH ${SOURCE_PATH}
-    OPTIONS ${OPTIONS}
-)
 
-vcpkg_install_make()
-vcpkg_fixup_pkgconfig()
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
-
-# Handle copyright
-file(INSTALL ${SOURCE_PATH}/COPYING DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/COPYING")

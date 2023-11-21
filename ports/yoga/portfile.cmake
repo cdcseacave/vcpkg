@@ -3,40 +3,22 @@ vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO facebook/yoga
-    REF 1.18.0
-    SHA512 dba75bff0fd3b72a3c17a6856253bd14d8af7fbb2832b432118c6ee509f9fe234874969a9cfb56690ec5a2649637a6bf090da5c5f5e8907c1e1e9c09f05977e2
+    REF "v${VERSION}"
+    SHA512 0b1a7e4db856845137c0d6f4bf440b0e56a4c288e50446000c4093dd01ef1469100d1ca25a963af3e5f786e1c439b3cca47f4fbf4c28fd87ae7f160a47657f26
     HEAD_REF master
-    PATCHES add-project-declaration.patch
+    PATCHES
+        disable_tests.patch
 )
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
 )
 
-vcpkg_build_cmake()
-vcpkg_copy_pdbs()
+vcpkg_cmake_install()
 
-file(INSTALL ${SOURCE_PATH}/yoga DESTINATION ${CURRENT_PACKAGES_DIR}/include FILES_MATCHING PATTERN "*.h")
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/${PORT})
 
-set(YOGA_LIB_PREFFIX )
-if (NOT VCPKG_TARGET_IS_WINDOWS)
-    set(YOGA_LIB_PREFFIX lib)
-endif()
-if(NOT DEFINED VCPKG_BUILD_TYPE OR VCPKG_BUILD_TYPE STREQUAL "release")
-    set(YOGA_BINARY_PATH )
-    if (VCPKG_TARGET_IS_WINDOWS)
-        set(YOGA_BINARY_PATH Release/)
-    endif()
-    file(INSTALL ${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-rel/${YOGA_BINARY_PATH}${YOGA_LIB_PREFFIX}yogacore${VCPKG_TARGET_STATIC_LIBRARY_SUFFIX} DESTINATION ${CURRENT_PACKAGES_DIR}/lib)
-endif()
-if(NOT DEFINED VCPKG_BUILD_TYPE OR VCPKG_BUILD_TYPE STREQUAL "debug")
-    set(YOGA_BINARY_PATH )
-    if (VCPKG_TARGET_IS_WINDOWS)
-        set(YOGA_BINARY_PATH Debug/)
-    endif()
-    file(INSTALL ${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg/${YOGA_BINARY_PATH}${YOGA_LIB_PREFFIX}yogacore${VCPKG_TARGET_STATIC_LIBRARY_SUFFIX} DESTINATION ${CURRENT_PACKAGES_DIR}/debug/lib)
-endif()
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
 
-vcpkg_copy_pdbs()
-
-file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
+file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/usage" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}")

@@ -1,27 +1,37 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO githubuser0xFFFF/Qt-Advanced-Docking-System
-    REF 44dc76bd19853dcb18d37d5be231af526c8f709e #v3.6.3
-    SHA512 ff50cd65f82736eae90f823d332d63c5c024ecb9e510f95fb8d776a0763bbd0143094b789516193c4037ca2a82eba33d73a68193bb6777e285c8a1e397b3958c 
+    REF "${VERSION}"
+    SHA512 2da93dfecdccf494ab051dd42c79ade681534530914ad4ddfc38ec77c32b3c1e56242bef7dd1bfe8b14bc63564c485d59da2518bf6d6b76c3be905accfe6297c
     HEAD_REF master
-    PATCHES
-        hardcode_version.patch
-        config_changes.patch
 )
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
-    OPTIONS 
+if(VCPKG_CROSSCOMPILING)
+    list(APPEND _qarg_OPTIONS "-DQT_HOST_PATH=${CURRENT_HOST_INSTALLED_DIR}")
+    list(APPEND _qarg_OPTIONS "-DQT_HOST_PATH_CMAKE_DIR:PATH=${CURRENT_HOST_INSTALLED_DIR}/share")
+endif()
+
+string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "static" BUILD_STATIC)
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS
+        ${_qarg_OPTIONS}
         -DBUILD_EXAMPLES=OFF
-        -DVERSION_SHORT=3.6.3
+        -DADS_VERSION=${VERSION}
+        -DQT_VERSION_MAJOR=6
+        -DBUILD_STATIC=${BUILD_STATIC}
 )
+vcpkg_cmake_install()
+vcpkg_cmake_config_fixup(PACKAGE_NAME "qt6advanceddocking" CONFIG_PATH "lib/cmake/qt6advanceddocking")
 
-vcpkg_install_cmake()
+vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/share/qt6advanceddocking/qt6advanceddockingConfig.cmake"
+"include(CMakeFindDependencyMacro)"
+[[include(CMakeFindDependencyMacro)
+find_dependency(Qt6 COMPONENTS Core Gui Widgets)]])
 
-file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
-file(INSTALL ${SOURCE_PATH}/gnu-lgpl-v2.1.md DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT})
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/license)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/qtadvanceddocking TARGET_PATH share/qtadvanceddocking)
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/license")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/license")
+
+file(INSTALL "${SOURCE_PATH}/gnu-lgpl-v2.1.md" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}")
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")

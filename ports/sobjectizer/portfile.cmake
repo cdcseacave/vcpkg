@@ -1,31 +1,25 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO stiffstream/sobjectizer
-    REF 04ec6fcf63eb977e9f45348b7c05b0d98c8f0b60 # v.5.7.2.1
-    SHA512 b2550d7bf7f3e405fccff02ae12fd2a235016c5c8bdcfc0bb1baf3a91f90369d68b2c57dbecbc990a8627338b7dcd6b3d32b681aaf0335dde0b2672003fe38ec
+    REF "v.${VERSION}"
+    SHA512 2121c33660ed9866527533a4cce660762d2c92e4224a7d1ef3130e26fd9015664fa0190b673cea89568314a4fa4cbb9414be9c86983ae87d07cacc122ced79bf
 )
 
-if(VCPKG_LIBRARY_LINKAGE STREQUAL static)
-    set(SOBJECTIZER_BUILD_STATIC ON)
-    set(SOBJECTIZER_BUILD_SHARED OFF)
-else()
-    set(SOBJECTIZER_BUILD_STATIC OFF)
-    set(SOBJECTIZER_BUILD_SHARED ON)
-endif()
+string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "static" SOBJECTIZER_BUILD_STATIC )
+string(COMPARE EQUAL "${VCPKG_LIBRARY_LINKAGE}" "dynamic" SOBJECTIZER_BUILD_SHARED)
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}/dev
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}/dev"
     OPTIONS
         -DSOBJECTIZER_BUILD_STATIC=${SOBJECTIZER_BUILD_STATIC}
         -DSOBJECTIZER_BUILD_SHARED=${SOBJECTIZER_BUILD_SHARED}
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
 
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
 
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/sobjectizer)
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/sobjectizer)
 
-file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+file(INSTALL "${SOURCE_PATH}/LICENSE" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)
 

@@ -1,26 +1,36 @@
-vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
+if(VCPKG_TARGET_IS_WINDOWS)
+    vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
+endif()
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
-    REPO artpaul/clickhouse-cpp
-    REF 1634d8b9e2f3183de1574344563d90557be3b305
-    SHA512 bef74f624c2a777f8ec6b7e87ac3cc564e914bcecc639b3889695da56be4c90531309a8fd87054c2777580c36bc3b2d6e9c5690a6345018bf65a5294eeeb3390
+    REPO ClickHouse/clickhouse-cpp
+    REF "v${VERSION}"
+    SHA512 2719c034a2dc2de7e992aa17859ea437551bfe89395e6a708a4549ed274f366aee0c0f0bcd90a690c15f5361a8f8198bb4f1d7d986da98c1d632489bcfb8bdd0
     HEAD_REF master
-    PATCHES 00001-fix-build.patch
+    PATCHES
+        fix-deps-and-build-type.patch
+        fix-timeval.patch
 )
 
-file(COPY ${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt DESTINATION ${SOURCE_PATH})
-
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
+    FEATURES
+        openssl WITH_OPENSSL
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS
+        ${FEATURE_OPTIONS}
+        -DWITH_SYSTEM_ABSEIL=ON
+        -DWITH_SYSTEM_LZ4=ON
+        -DWITH_SYSTEM_CITYHASH=ON
+)
+
+vcpkg_cmake_install()
 vcpkg_copy_pdbs()
-vcpkg_fixup_cmake_targets(CONFIG_PATH share/cmake/clickhouse-cpp)
 
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
 
-configure_file(${SOURCE_PATH}/LICENSE ${CURRENT_PACKAGES_DIR}/share/clickhouse-cpp/copyright COPYONLY)
+file(INSTALL "${SOURCE_PATH}/LICENSE" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)

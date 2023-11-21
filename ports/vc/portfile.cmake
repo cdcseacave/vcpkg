@@ -1,26 +1,24 @@
-vcpkg_fail_port_install(ON_ARCH "arm64")
-
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
-    REPO  VcDevel/Vc 
-    REF 1.4.1
-    SHA512 dd17e214099796c41d70416d365ea038c00c5fda285b05e48d7ee4fe03f4db2671d2be006ca7b98b0d4133bfcb57faf04cecfe35c29c3b006cd91c9a185cc04a
-    HEAD_REF master
-    PATCHES
-        "correct_cmake_config_path.patch"
+    REPO  VcDevel/Vc
+    REF 1.4.4
+    SHA512 b8aa0a45637dd1e0cc23f074d023b677aab570dd4a78cff94e4c2d832afb841c1b421077ae9c848a40aa4beb50ed2e31fdf075738496856ff8fe3ea1d0acba07
+    HEAD_REF 1.4
+    PATCHES 
+       correct_cmake_config_path.patch
 )
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
-    -DBUILD_TESTING=OFF
-    -DBUILD_EXAMPLES=OFF
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS
+        -DBUILD_TESTING=OFF
+        -DBUILD_EXAMPLES=OFF
 )
-vcpkg_install_cmake()
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/Vc/)
+vcpkg_cmake_install()
+vcpkg_cmake_config_fixup(CONFIG_PATH "lib/cmake/Vc/")
 vcpkg_copy_pdbs()
 
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
 
-file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+file(INSTALL "${SOURCE_PATH}/LICENSE" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)

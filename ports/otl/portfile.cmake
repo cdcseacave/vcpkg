@@ -1,14 +1,14 @@
-set(OTL_VERSION 40455)
+set(OTL_VERSION 40476)
 
 vcpkg_download_distfile(ARCHIVE
     URLS "http://otl.sourceforge.net/otlv4_${OTL_VERSION}.zip"
-    FILENAME "otlv4_${OTL_VERSION}.zip"
-    SHA512 2d5c52af3eafdd93bf7c651de218607b8985acc1fce279d48d9bf58ecf8a012332c8d0b9a33223a6449f343134211e2d7c5412b71efb36ba484bda754e1afc45
+    FILENAME "otlv4_${OTL_VERSION}-9485a0fe15a7-1.zip"
+    SHA512 ef43695b4c97d953bd997ba2381ae37ae067efb99a14479e93f502e3ad5d651829a9712bd14698c8663f733114861f6e2ae2277ed0967fad1ac2a068825a9e38
 )
 
-vcpkg_extract_source_archive_ex(
-    OUT_SOURCE_PATH SOURCE_PATH
-    ARCHIVE ${ARCHIVE}
+vcpkg_extract_source_archive(
+    SOURCE_PATH
+    ARCHIVE "${ARCHIVE}"
     NO_REMOVE_ONE_LEVEL
 )
 
@@ -16,6 +16,16 @@ file(INSTALL "${SOURCE_PATH}/otlv${OTL_VERSION}.h"
     DESTINATION "${CURRENT_PACKAGES_DIR}/include/${PORT}" 
     RENAME otlv4.h)
 
-file(INSTALL "${SOURCE_PATH}/otlv${OTL_VERSION}.h" 
-    DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" 
-    RENAME copyright)
+file(READ "${SOURCE_PATH}/otlv${OTL_VERSION}.h" copyright_contents)
+string(FIND "${copyright_contents}" "#ifndef OTL_H" start_of_source)
+if(start_of_source EQUAL "-1")
+    message(FATAL_ERROR "Could not find start of source; the header file has changed in a way that we cannot get the license text.")
+endif()
+string(SUBSTRING "${copyright_contents}" 0 "${start_of_source}" copyright_contents)
+string(REGEX REPLACE "// ?" "" copyright_contents "${copyright_contents}")
+string(REGEX REPLACE "=+\n" "" copyright_contents "${copyright_contents}")
+
+file(WRITE
+    "${CURRENT_PACKAGES_DIR}/share/${PORT}/copyright"
+    "${copyright_contents}"
+)

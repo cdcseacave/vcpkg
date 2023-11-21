@@ -1,55 +1,44 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO jedisct1/libsodium
-    REF 1.0.18
+    REF ${VERSION}
     SHA512 727fe50a5fb1df86ec5d807770f408a52609cbeb8510b4f4183b2a35a537905719bdb6348afcb103ff00ce946a8094ac9559b6e3e5b2ccc2a2d0c08f75577eeb
     HEAD_REF master
 )
 
-configure_file(
-    ${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt
-    ${SOURCE_PATH}/CMakeLists.txt
-    COPYONLY
-)
+file(COPY "${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt" DESTINATION "${SOURCE_PATH}")
 
-configure_file(
-    ${CMAKE_CURRENT_LIST_DIR}/sodiumConfig.cmake.in
-    ${SOURCE_PATH}/sodiumConfig.cmake.in
-    COPYONLY
-)
+if(VCPKG_TARGET_IS_EMSCRIPTEN)
+	set(ADDITIONAL_OPTIONS "-DENABLE_SSP=OFF")
+endif()
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
         -DBUILD_TESTING=OFF
+        ${ADDITIONAL_OPTIONS}
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
 
 vcpkg_copy_pdbs()
 
-vcpkg_fixup_cmake_targets(
-    CONFIG_PATH lib/cmake/unofficial-sodium
-    TARGET_PATH share/unofficial-sodium
+vcpkg_cmake_config_fixup(
+    PACKAGE_NAME unofficial-sodium
 )
+vcpkg_fixup_pkgconfig()
 
 file(REMOVE_RECURSE
-    ${CURRENT_PACKAGES_DIR}/debug/include
+    "${CURRENT_PACKAGES_DIR}/debug/include"
+    "${CURRENT_PACKAGES_DIR}/debug/share"
 )
 
-file(REMOVE ${CURRENT_PACKAGES_DIR}/include/Makefile.am)
-
-if (VCPKG_LIBRARY_LINKAGE STREQUAL "static")
-    vcpkg_replace_string(
-        ${CURRENT_PACKAGES_DIR}/include/sodium/export.h
-        "#ifdef SODIUM_STATIC"
-        "#if 1 //#ifdef SODIUM_STATIC"
-    )
-endif ()
+file(REMOVE "${CURRENT_PACKAGES_DIR}/include/Makefile.am")
 
 configure_file(
-    ${SOURCE_PATH}/LICENSE
-    ${CURRENT_PACKAGES_DIR}/share/${PORT}/copyright
-    COPYONLY
+    "${CMAKE_CURRENT_LIST_DIR}/sodiumConfig.cmake.in"
+    "${CURRENT_PACKAGES_DIR}/share/unofficial-sodium/unofficial-sodiumConfig.cmake"
+    @ONLY
 )
+
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")

@@ -1,54 +1,56 @@
-vcpkg_from_sourceforge (
+vcpkg_from_sourceforge(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO geographiclib
-    REF distrib
-    FILENAME "GeographicLib-1.51.tar.gz"
-    SHA512 34487a09fa94a34d24179cfe9fd2e5fdda28675966703ca137cbfe6cc88760c2fbde55f76c464de060b58bfe0a516e22c0f59318cf85ae7cc01c5c6a73dd6ead
-    PATCHES cxx-library-only.patch
+    REF distrib-C++
+    FILENAME "GeographicLib-2.3.tar.gz"
+    SHA512 1a1bd0fc2dc3e1372cf22618af3a4340bbc6497f94c64226c97654dfff92a4bf3acf47d91592741fe0c643d401d9721f680bdb4974b8ee258fb09d525fbaec67
+    PATCHES remove-broken-and-unnecessary-cross-compile-check.patch
+    )
+
+vcpkg_check_features(
+    OUT_FEATURE_OPTIONS FEATURE_OPTIONS
+    FEATURES
+        "tools" TOOLS
 )
 
-vcpkg_check_features (
-  OUT_FEATURE_OPTIONS FEATURE_OPTIONS
-  INVERTED_FEATURES
-    "tools" SKIP_TOOLS
+# GeographicLib's CMakeLists.txt allows the installation directories for
+# all the components to be set independently.  A "false" value, e.g., an
+# empty string or OFF (-DBINDIR=OFF), indicates that the corresponding
+# component should not be installed.
+if(TOOLS)
+    set(TOOL_OPTION "-DBINDIR=tools/${PORT}")
+else()
+    set(TOOL_OPTION -DBINDIR=OFF)
+endif()
+
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS ${TOOL_OPTION}
+    "-DCMAKEDIR=share/${PORT}"
+    -DDOCDIR=OFF
+    -DEXAMPLEDIR=OFF
+    -DMANDIR=OFF
+    -DSBINDIR=OFF
 )
 
-if (VCPKG_LIBRARY_LINKAGE STREQUAL dynamic)
-  set (LIB_TYPE "SHARED")
-else ()
-  set (LIB_TYPE "STATIC")
-endif ()
+vcpkg_cmake_install()
+vcpkg_cmake_config_fixup()
+vcpkg_copy_pdbs()
 
-if (tools IN_LIST FEATURES)
-  vcpkg_fail_port_install (
-    MESSAGE "Cannot build GeographicLib tools for UWP"
-    ON_TARGET uwp
-  )
-endif ()
+vcpkg_fixup_pkgconfig()
 
-vcpkg_configure_cmake (
-    SOURCE_PATH ${SOURCE_PATH}
-    OPTIONS
-        "-DGEOGRAPHICLIB_LIB_TYPE=${LIB_TYPE}"
-        ${FEATURE_OPTIONS}
-    PREFER_NINJA # Disable this option if project cannot be built with Ninja
-)
+if(tools IN_LIST FEATURES)
+    vcpkg_copy_tool_dependencies("${CURRENT_PACKAGES_DIR}/tools/${PORT}")
+endif()
 
-vcpkg_install_cmake ()
-vcpkg_fixup_cmake_targets (CONFIG_PATH share/geographiclib)
-vcpkg_copy_pdbs ()
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/tools")
 
-if (tools IN_LIST FEATURES)
-  vcpkg_copy_tool_dependencies (${CURRENT_PACKAGES_DIR}/tools/${PORT})
-endif ()
-
-file (REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/share)
-file (REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
-file (REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/tools)
-file (INSTALL ${SOURCE_PATH}/LICENSE.txt
-  DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT}
-  RENAME copyright)
+file(INSTALL "${SOURCE_PATH}/LICENSE.txt"
+    DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}"
+    RENAME copyright)
 
 # Install usage
-configure_file (${CMAKE_CURRENT_LIST_DIR}/usage
-  ${CURRENT_PACKAGES_DIR}/share/${PORT}/usage @ONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/usage"
+    "${CURRENT_PACKAGES_DIR}/share/${PORT}/usage" @ONLY)

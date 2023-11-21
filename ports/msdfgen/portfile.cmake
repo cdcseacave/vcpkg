@@ -1,44 +1,51 @@
-# No symbols are exported in msdfgen source
-vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO Chlumsky/msdfgen
-    REF 9af250c7d6780a41dcaf536c05e3e1987a1bdcd7
-    SHA512 6b1dadd386aedf1e2de927dc83fe1f7fd7e053b0e9829ea0609a193ab8d9f92ecf08d2a6225b76a4f7bf9344b2935f38bbd00c4cc0c6627c1d95f67d2db728fe
+    REF v1.11
+    SHA512 b5223bbdbd7245e7a891914158a25ea1d570bbe1066ca6c016d1ddd469d5156690f83f91c78630b2b2efcc890de0b7e1c9e8963a67f9eb8f83c6d45284d5b08a
     HEAD_REF master
-    PATCHES
-        compatibility.patch
 )
 
-set(BUILD_TOOLS OFF)
-if ("tools" IN_LIST FEATURES)
-    if (VCPKG_TARGET_IS_UWP)
-        message("Tools couldn't be built on UWP, disable it automatically.")
-    else()
-        set(BUILD_TOOLS ON)
-    endif()
+vcpkg_check_features(
+    OUT_FEATURE_OPTIONS FEATURE_OPTIONS
+    FEATURES
+        openmp MSDFGEN_USE_OPENMP
+        geometry-preprocessing MSDFGEN_USE_SKIA
+        tools MSDFGEN_BUILD_STANDALONE
+    INVERTED_FEATURES
+        extensions MSDFGEN_CORE_ONLY
+)
+
+if (VCPKG_CRT_LINKAGE STREQUAL dynamic)
+    set(MSDFGEN_DYNAMIC_RUNTIME ON)
+else()
+    set(MSDFGEN_DYNAMIC_RUNTIME OFF)
 endif()
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
-        -DMSDFGEN_BUILD_MSDFGEN_STANDALONE=${BUILD_TOOLS}
+        -DMSDFGEN_USE_VCPKG=ON
+        -DMSDFGEN_VCPKG_FEATURES_SET=ON
+        -DMSDFGEN_INSTALL=ON
+        -DMSDFGEN_DYNAMIC_RUNTIME="${MSDFGEN_DYNAMIC_RUNTIME}"
+        ${FEATURE_OPTIONS}
+    MAYBE_UNUSED_VARIABLES
+        MSDFGEN_VCPKG_FEATURES_SET
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
 
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/msdfgen)
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/msdfgen)
 
 # move exe to tools
-if(BUILD_TOOLS AND VCPKG_LIBRARY_LINKAGE STREQUAL "static")
+if("tools" IN_LIST FEATURES)
     vcpkg_copy_tools(TOOL_NAMES msdfgen AUTO_CLEAN)
 endif()
 
-
 # cleanup
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
 
 # license
-file(INSTALL ${SOURCE_PATH}/LICENSE.txt DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+file(INSTALL "${SOURCE_PATH}/LICENSE.txt" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)

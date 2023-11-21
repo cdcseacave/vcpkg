@@ -1,12 +1,15 @@
 {
   "name": "osgearth",
-  "version": "3.1",
+  "version": "3.4",
   "port-version": 1,
-  "description": "osgEarth - Dynamic map generation toolkit for OpenSceneGraph Copyright 2015 Pelican Mapping.",
+  "description": "osgEarth - Dynamic map generation toolkit for OpenSceneGraph Copyright 2021 Pelican Mapping.",
   "homepage": "https://github.com/gwaldron/osgearth",
-  "supports": "!(x86 | wasm32) & !staticcrt",
+  "license": "LGPL-3.0-or-later",
+  "supports": "!(arm | x86 | wasm32 | xbox)",
   "dependencies": [
     "basisu",
+    "blosc",
+    "cfitsio",
     "draco",
     "geos",
     "glew",
@@ -15,11 +18,49 @@
     "opengl",
     {
       "name": "osg",
+      "default-features": false,
       "features": [
         "plugins"
       ]
     },
     "protobuf",
-    "sqlite3"
-  ]
+    "pthreads",
+    "sqlite3",
+    "tinyxml",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ],
+  "default-features": [
+    "default-features"
+  ],
+  "features": {
+    "blend2d": {
+      "description": "Enable Blend2D support",
+      "dependencies": [
+        "blend2d"
+      ]
+    },
+    "default-features": {
+      "description": "Platform-dependent default features",
+      "dependencies": [
+        {
+          "name": "osgearth",
+          "default-features": false,
+          "features": [
+            "blend2d"
+          ],
+          "platform": "!(arm & windows) & !uwp & !wasm32"
+        }
+      ]
+    },
+    "tools": {
+      "description": "Build tools"
+    }
+  }
 }

@@ -1,30 +1,38 @@
 cmake_minimum_required(VERSION 3.11)
 project(librsvg C)
 
-find_package(unofficial-cairo CONFIG REQUIRED)
-find_package(unofficial-libcroco CONFIG REQUIRED)
-find_package(unofficial-glib CONFIG REQUIRED)
-find_package(LibXml2 REQUIRED)
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-  find_library(PANGO_LIB pango-1.0)
-  find_library(PANGO_CAIRO_LIB pangocairo-1.0)
-  find_library(GDK_PIXBUF_LIB gdk_pixbuf-2.0)
-elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
-  find_library(PANGO_LIB pango-1.0)
-  find_library(PANGO_CAIRO_LIB pangocairo-1.0)
-  find_library(GDK_PIXBUF_LIB gdk_pixbuf-2)
-else()
-  find_library(PANGO_LIB pango-1)
-  find_library(PANGO_CAIRO_LIB pangocairo-1)
-  find_library(PANGO_FT2_LIB pangoft2-1)
-  find_library(FONTCONFIG_LIB fontconfig)
-  find_library(GDK_PIXBUF_LIB gdk_pixbuf-2)
+set(RSVG_API_MAJOR_VERSION 2)
+set(RSVG_API_VERSION "2.0")
+Set(VERSION "2.40.20")
+set(LIBRSVG_TARGET "rsvg-${RSVG_API_MAJOR_VERSION}")
+
+Set(prefix "${CMAKE_INSTALL_PREFIX}")
+Set(exec_prefix "\${prefix}")
+Set(libdir "\${prefix}/lib")
+Set(includedir "\${prefix}/include")
+
+# Public required modules (cf. headers and librsvg.pc)
+set(librsvg_pc_requires glib-2.0 gio-2.0 gdk-pixbuf-2.0 cairo)
+# Other required modules from configure.ac
+set(librsvg_pc_requires_private
+    libxml-2.0
+    pangocairo
+    pangoft2
+    cairo-png
+    libcroco-0.6
+    gthread-2.0
+    gmodule-2.0
+    gobject-2.0
+    gio-unix-2.0
+    fontconfig
+)
+if(WIN32)
+    string(REPLACE "gio-unix" "gio-windows" librsvg_pc_requires_private "${librsvg_pc_requires_private}")
 endif()
 
-find_path(CAIRO_INCLUDE_DIR cairo/cairo.h)
-
-# Add include directories
-include_directories(${CAIRO_INCLUDE_DIR} ${GDK_PIXBUF_INCLUDE_DIR})
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBRSVG_LINK_PUBLIC ${librsvg_pc_requires} IMPORTED_TARGET REQUIRED)
+pkg_check_modules(LIBRSVG_LINK_PRIVATE ${librsvg_pc_requires_private} IMPORTED_TARGET REQUIRED)
 
 set(LIBRSVG_SOURCES
     librsvg-features.c
@@ -79,86 +87,87 @@ set(LIBRSVG_SOURCES
     librsvg-enum-types.h
 )
 
-set(PIXBUFLOADERSVG_SOURCES 
-    gdk-pixbuf-loader/io-svg.c
-)
-
 if(WIN32)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.win32 ${CMAKE_CURRENT_SOURCE_DIR}/config.h COPYONLY)
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/rsvg.def
-        COMMAND echo "EXPORTS" > ${CMAKE_CURRENT_SOURCE_DIR}/rsvg.def
-        COMMAND ${CMAKE_C_COMPILER} /EP ${CMAKE_CURRENT_SOURCE_DIR}/rsvg.symbols >> ${CMAKE_CURRENT_SOURCE_DIR}/rsvg.def)
-    list(APPEND LIBRSVG_SOURCES rsvg.def)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.h.win32" "${CMAKE_CURRENT_BINARY_DIR}/config.h" COPYONLY)
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/rsvg.symbols" rsvg_symbols)
+    string(REGEX REPLACE "/[*][^*]*[*]/" "" rsvg_symbols "${rsvg_symbols}")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/rsvg.def" "EXPORTS\n${rsvg_symbols}")
+    list(APPEND LIBRSVG_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/rsvg.def")
 else()
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.linux ${CMAKE_CURRENT_SOURCE_DIR}/config.h COPYONLY)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.h.linux" "${CMAKE_CURRENT_BINARY_DIR}/config.h" COPYONLY)
     list(APPEND LIBRSVG_SOURCES rsvg.symbols)
 endif()
 
-set(CMAKE_DEBUG_POSTFIX "d")
-
-add_library(rsvg-2.40 ${LIBRSVG_SOURCES})
-add_library(pixbufloader-svg ${PIXBUFLOADERSVG_SOURCES})
-
-target_compile_definitions(rsvg-2.40 PRIVATE -DRSVG_COMPILATION -D_CRT_SECURE_NO_WARNINGS -DSRCDIR="${CMAKE_CURRENT_SOURCE_DIR}")
-
-target_include_directories(pixbufloader-svg PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(pixbufloader-svg PRIVATE 
-    -DRSVG_COMPILATION 
+add_library(${LIBRSVG_TARGET} ${LIBRSVG_SOURCES})
+target_compile_definitions(${LIBRSVG_TARGET} PRIVATE
+    -DRSVG_COMPILATION
     -D_CRT_SECURE_NO_WARNINGS
-    -DSRCDIR="${CMAKE_CURRENT_SOURCE_DIR}" 
-    -DGDK_PIXBUF_ENABLE_BACKEND 
-    -DG_LOG_DOMAIN="libpixbufloader-svg")
-
-target_link_libraries(rsvg-2.40 PRIVATE
-    unofficial::cairo::cairo
-    unofficial::libcroco::croco-0.6
-    unofficial::glib::gio
-    unofficial::glib::glib
-    unofficial::glib::gmodule
-    unofficial::glib::gobject
-    ${LIBXML2_LIBRARIES}
-    ${PANGO_LIB}
-    ${PANGO_CAIRO_LIB}
-    ${GDK_PIXBUF_LIB}
-    ${PANGO_FT2_LIB}
-    ${FONTCONFIG_LIB}
+    -DSRCDIR=""
+    $<$<BOOL:${MINGW}>:HAVE_STRTOK_R>
 )
-target_link_libraries(pixbufloader-svg PRIVATE
-    rsvg-2.40
-    unofficial::glib::glib
-    unofficial::glib::gobject
-    ${GDK_PIXBUF_LIB}
+target_include_directories(${LIBRSVG_TARGET}
+    PRIVATE
+        "${CMAKE_CURRENT_BINARY_DIR}"
+    PUBLIC
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+        "$<INSTALL_INTERFACE:include/librsvg-${RSVG_API_VERSION}>"
 )
-
-install(TARGETS rsvg-2.40 pixbufloader-svg
-    EXPORT librsvg-targets
+target_link_libraries(${LIBRSVG_TARGET}
+    PUBLIC
+        PkgConfig::LIBRSVG_LINK_PUBLIC
+    PRIVATE
+        PkgConfig::LIBRSVG_LINK_PRIVATE
+)
+install(TARGETS ${LIBRSVG_TARGET}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
 )
-
 install(
-    EXPORT librsvg-targets
-    NAMESPACE unofficial::librsvg::
-    FILE unofficial-librsvg-targets.cmake
-    DESTINATION share/unofficial-librsvg
+    FILES
+        rsvg.h
+        rsvg-cairo.h
+        librsvg-features.h
+        librsvg-enum-types.h
+    DESTINATION include/librsvg-${RSVG_API_VERSION}/librsvg
 )
 
-install(FILES
-	rsvg.h
-	rsvg-cairo.h
-    librsvg-features.h
-    librsvg-enum-types.h
-    DESTINATION include/librsvg
+
+set(gdk_pixbuf_pc_requires_private gdk-pixbuf-2.0)
+pkg_check_modules(GDK_PIXBUF ${gdk_pixbuf_pc_requires_private} IMPORTED_TARGET REQUIRED)
+pkg_get_variable(GDK_PIXBUF_MODULEDIR ${gdk_pixbuf_pc_requires_private} gdk_pixbuf_moduledir)
+
+set(PIXBUFLOADERSVG_SOURCES
+    gdk-pixbuf-loader/io-svg.c
 )
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/unofficial-librsvg-config.cmake "
-include(CMakeFindDependencyMacro)
-find_dependency(unofficial-cairo CONFIG)
-find_dependency(unofficial-libcroco CONFIG)
-find_dependency(gdk-pixbuf CONFIG)
-find_dependency(pango CONFIG)
+add_library(pixbufloader-svg MODULE ${PIXBUFLOADERSVG_SOURCES})
+target_include_directories(pixbufloader-svg
+    PRIVATE
+        "${CMAKE_CURRENT_BINARY_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_compile_definitions(pixbufloader-svg PRIVATE
+    -DRSVG_COMPILATION
+    -D_CRT_SECURE_NO_WARNINGS
+    -DSRCDIR=""
+    -DGDK_PIXBUF_ENABLE_BACKEND
+    -DG_LOG_DOMAIN="libpixbufloader-svg"
+)
+target_link_libraries(pixbufloader-svg
+    PRIVATE
+        ${LIBRSVG_TARGET}
+        PkgConfig::GDK_PIXBUF
+)
+install(TARGETS pixbufloader-svg
+    RUNTIME DESTINATION "${GDK_PIXBUF_MODULEDIR}"
+    LIBRARY DESTINATION "${GDK_PIXBUF_MODULEDIR}"
+)
 
-include(\${CMAKE_CURRENT_LIST_DIR}/unofficial-librsvg-targets.cmake)
-")
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/unofficial-librsvg-config.cmake DESTINATION share/unofficial-librsvg)
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/librsvg.pc.in" "${CMAKE_CURRENT_BINARY_DIR}/librsvg.pc" @ONLY)
+file(READ "${CMAKE_CURRENT_BINARY_DIR}/librsvg.pc" librsvg_pc)
+list(JOIN librsvg_pc_requires_private " " requires_private)
+string(REPLACE "Requires.private:" "Requires.private: ${requires_private}" librsvg_pc "${librsvg_pc}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/librsvg.pc" "${librsvg_pc}")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/librsvg.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig" RENAME "librsvg-${RSVG_API_VERSION}.pc")

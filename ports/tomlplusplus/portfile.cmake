@@ -1,26 +1,23 @@
-vcpkg_fail_port_install(ON_ARCH "arm" "arm64" ON_TARGET "osx" "uwp")
-
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO marzer/tomlplusplus
-    REF v2.3.0
-    SHA512 3a6328f71953baca25cb29bb493605e964496d1bc39961679cd97f72feecad63a21d6ebd9fe51b6e1b9b185a35581cb3fb199f6b0cc643b5b782bdd85249b79e
+    REF "v${VERSION}"
+    SHA512 c227fc8147c9459b29ad24002aaf6ab2c42fac22ea04c1c52b283a0172581ccd4527b33c1931e0ef0d1db6b6a53f9e9882c6d4231c7f3494cf070d0220741aa5
     HEAD_REF master
+    PATCHES
+        fix-android-fileapi.patch
 )
 
 vcpkg_configure_meson(
-    SOURCE_PATH ${SOURCE_PATH}
-    OPTIONS 
-        -Dgenerate_cmake_config=true
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS
+        -Dgenerate_cmake_config=false
         -Dbuild_tests=false
         -Dbuild_examples=false
 )
 
 vcpkg_install_meson()
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/${PORT})
 vcpkg_fixup_pkgconfig()
 
-file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug"
-                    "${CURRENT_PACKAGES_DIR}/lib")
-
-file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
+file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/usage" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}")
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
