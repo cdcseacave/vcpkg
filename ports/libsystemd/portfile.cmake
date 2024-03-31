@@ -2,10 +2,12 @@ vcpkg_from_github(
   OUT_SOURCE_PATH SOURCE_PATH
   REPO systemd/systemd
   REF "v${VERSION}"
-  SHA512 84b4d16980fe2e64d5c3c95b9b4fbaad1076f368f493fdd745cbafbe7ce825293384f5fa0b6360ba8188da23c4575e87402fb666a3b71f84ff8b323aba0c07ff
+  SHA512 51728de604c2169d8643718ac72acb8f70f613cfcca9e9abb7dac519f291fa26a16d48f24cae6897356319096cfe8f4d9377743e7870127374f98d432e0c557c
   PATCHES
     pkgconfig.patch
 )
+
+vcpkg_add_to_path(PREPEND "${CURRENT_HOST_INSTALLED_DIR}/tools/gperf")
 
 vcpkg_configure_meson(
   SOURCE_PATH "${SOURCE_PATH}"
@@ -39,15 +41,19 @@ else()
   file(INSTALL "${BUILD_DIR_RELEASE}/libsystemd.so" DESTINATION "${CURRENT_PACKAGES_DIR}/lib" FOLLOW_SYMLINK_CHAIN)
 endif()
 
-set(BUILD_DIR_DEBUG "${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg")
-if(VCPKG_LIBRARY_LINKAGE STREQUAL "static")
-  file(INSTALL "${BUILD_DIR_DEBUG}/libsystemd.a" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib")
-else()
-  file(INSTALL "${BUILD_DIR_DEBUG}/libsystemd.so" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib" FOLLOW_SYMLINK_CHAIN)
+if(NOT VCPKG_BUILD_TYPE)
+  set(BUILD_DIR_DEBUG "${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg")
+  if(VCPKG_LIBRARY_LINKAGE STREQUAL "static")
+    file(INSTALL "${BUILD_DIR_DEBUG}/libsystemd.a" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib")
+  else()
+    file(INSTALL "${BUILD_DIR_DEBUG}/libsystemd.so" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib" FOLLOW_SYMLINK_CHAIN)
+  endif()
 endif()
 
 file(INSTALL "${BUILD_DIR_RELEASE}/src/libsystemd/libsystemd.pc" DESTINATION "${CURRENT_PACKAGES_DIR}/lib/pkgconfig")
-file(INSTALL "${BUILD_DIR_DEBUG}/src/libsystemd/libsystemd.pc" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig")
+if(NOT VCPKG_BUILD_TYPE)
+  file(INSTALL "${BUILD_DIR_DEBUG}/src/libsystemd/libsystemd.pc" DESTINATION "${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig")
+endif()
 
 vcpkg_fixup_pkgconfig()
 

@@ -2,24 +2,10 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO openvinotoolkit/openvino
     REF "${VERSION}"
-    SHA512 29ee621c1428808607ce499e527b5943b8a2172769cb7315ef25253db818f54f2da4bbf5539198c012e25e78c8c830205b46f6e6a83032e732e82a7d00d46312
+    SHA512 89c60aa8c73d91003f9fdd4e8f93213b98164ecdcd4a4264ba93352473666a290d1dd55b61cf9c5d62b0cef429f989bb31f5d4bfa67cf6d97dfc2abca45d4186
     PATCHES
         # vcpkg specific patch, because OV creates a file in source tree, which is prohibited
         001-disable-tools.patch
-        # from https://github.com/openvinotoolkit/openvino/pull/18359
-        003-fix-find-onnx.patch
-        # from https://github.com/openvinotoolkit/openvino/pull/19629
-        004-compilation-with-cpp17.patch
-        # from https://github.com/openvinotoolkit/openvino/pull/19599
-        005-tflite-search.patch
-        # # from https://github.com/openvinotoolkit/openvino/pull/19946
-        007-macos-14.patch
-        # from https://github.com/openvinotoolkit/openvino/pull/19758
-        # and https://github.com/openvinotoolkit/openvino/pull/20612
-        008-dynamic-protubuf.patch
-        # from https://github.com/openvinotoolkit/openvino/pull/20588
-        # and https://github.com/openvinotoolkit/openvino/pull/20636
-        009-tensorflow-proto-odr.patch
     HEAD_REF master)
 
 vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
@@ -41,41 +27,43 @@ if(ENABLE_INTEL_GPU)
     # python is required for conversion of OpenCL source files into .cpp.
     vcpkg_find_acquire_program(PYTHON3)
 
-    if(VCPKG_LIBRARY_LINKAGE STREQUAL "static")
+    # remove 'rapidjson' directory and use vcpkg's one to comply with ODR
+    file(REMOVE_RECURSE ${SOURCE_PATH}/src/plugins/intel_gpu/thirdparty/rapidjson)
+
+    if(VCPKG_LIBRARY_LINKAGE STREQUAL "static" AND ENABLE_INTEL_CPU)
         message(WARNING
             "OneDNN for GPU is not available for static build, which is required for dGPU."
-            "Please, consider using VCPKG_LIBRARY_LINKAGE=\"dynamic\".")
-        list(APPEND FEATURE_OPTIONS "-DENABLE_ONEDNN_FOR_GPU=OFF")
+            "Please, consider using VCPKG_LIBRARY_LINKAGE=\"dynamic\" or disable CPU plugin,"
+            "which uses another flavor of oneDNN.")
     else()
         vcpkg_from_github(
             OUT_SOURCE_PATH DEP_SOURCE_PATH
             REPO oneapi-src/oneDNN
-            REF ec0b2ee85fc2a2dbdeec10035c5ef5813d8fb5ea
-            SHA512 abc09c9ab190cc043ba675fdcaf2da0069eacce14aad6e788a9957d8b6704cfcefe5a707e78d544d25acac35bc83217660ee64528150311f577d2ccbdd165de1
-            PATCHES 006-onednn-gpu-build.patch
+            REF 494af5f9921bdae98f1a0e2955fa7d76ff386c4f
+            SHA512 30c555cbe1e2f4f536ccedc920a962751ba05e2c49e38948e5da83f9b89e14eebda7450edabe51865beeebdf6b6da5fe4673c30d1db67c803f474e9093759b1f
         )
         file(COPY "${DEP_SOURCE_PATH}/" DESTINATION "${SOURCE_PATH}/src/plugins/intel_gpu/thirdparty/onednn_gpu")
     endif()
 
     list(APPEND FEATURE_OPTIONS
         "-DENABLE_SYSTEM_OPENCL=ON"
-        "-DPYTHON_EXECUTABLE=${PYTHON3}")
+        "-DPython3_EXECUTABLE=${PYTHON3}")
 endif()
 
 if(ENABLE_INTEL_CPU)
     vcpkg_from_github(
         OUT_SOURCE_PATH DEP_SOURCE_PATH
         REPO openvinotoolkit/oneDNN
-        REF a1aa20ca8f19465dc2fd18389953ed83798b2fd3
-        SHA512 0ff5b235a6f349ad94f52a3b8282f5c825eac7275ad784986d7f533863ace7a4ed71094b9f5cac85d473d2678e197727c1cb33dee5cf75cd793ded7be58f946e
+        REF f82148befdbdc9576ec721c9d500155ee4de8060
+        SHA512 d4270b27ee274a5aa065ae5812db3c6ca9c898d72059eb5146f040a3ee354c8f114e45247ac37cab9fb2beee0f09eea2d0947d4f06ecbc7121b14011d3e1ce6d
     )
     file(COPY "${DEP_SOURCE_PATH}/" DESTINATION "${SOURCE_PATH}/src/plugins/intel_cpu/thirdparty/onednn")
 
     vcpkg_from_github(
         OUT_SOURCE_PATH DEP_SOURCE_PATH
         REPO openvinotoolkit/mlas
-        REF c7c8a631315000f17c650af34431009d2f22129c
-        SHA512 4146598ce6b30a3eaea544d6703b949061118398e67b773aa11a3c0f3e8fbcc446d09ea893b9879f8869e977162bcada0d4895cb225cf2e2469fb71cd5942e53
+        REF d1bc25ec4660cddd87804fcf03b2411b5dfb2e94
+        SHA512 8d6dd319924135b7b22940d623305bf200b812ae64cde79000709de4fad429fbd43794301ef16e6f10ed7132777b7a73e9f30ecae7c030aea80d57d7c0ce4500
     )
     file(COPY "${DEP_SOURCE_PATH}/" DESTINATION "${SOURCE_PATH}/src/plugins/intel_cpu/thirdparty/mlas")
 
@@ -93,8 +81,8 @@ if(ENABLE_INTEL_CPU)
         vcpkg_from_github(
             OUT_SOURCE_PATH DEP_SOURCE_PATH
             REPO ARM-software/ComputeLibrary
-            REF v23.02.1
-            SHA512 ee9439e0804bacd365f079cedc548ffe2c12b0d4a86780e0783186884eb5a6d7aa7ceac11c504e242bedc55c3d026b826c90adaafbdbd3e5cfa2562a1c4ee04d
+            REF v23.08
+            SHA512 8379fdf804732ef4e69a3e91807810d413f35855d035cfde9d81059679f62cd625c0347f07dc1f76468dc82c06217a5ae8df25b4581a29558ac32b2a4f7d8af4
         )
         file(COPY "${DEP_SOURCE_PATH}/" DESTINATION "${SOURCE_PATH}/src/plugins/intel_cpu/thirdparty/ComputeLibrary")
     endif()
@@ -128,7 +116,7 @@ vcpkg_cmake_configure(
         "-DENABLE_PYTHON=OFF"
         "-DENABLE_GAPI_PREPROCESSING=OFF"
         "-DCPACK_GENERATOR=VCPKG"
-        "-DCMAKE_DISABLE_FIND_PACKAGE_pybind11=ON"
+        "-DENABLE_JS=OFF"
 )
 
 vcpkg_cmake_install()
@@ -139,6 +127,7 @@ vcpkg_copy_pdbs()
 
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+
 
 vcpkg_install_copyright(
     FILE_LIST
