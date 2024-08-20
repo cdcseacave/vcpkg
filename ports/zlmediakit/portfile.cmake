@@ -4,7 +4,10 @@ vcpkg_from_github(
     REF af3ef996b0ae265e000344e7faf753577f9abf4e
     SHA512 e45572a579d4644b4e48e70c999796d032947d64f074d7f143bd760238523d46ae061f079d9fe539a21542032f3c94ff7465fe2ba6c9fb39dbeac245dffd188b
     HEAD_REF master
-    PATCHES fix-dependency.patch
+    PATCHES 
+        fix-dependency.patch
+        fix-android-build.patch
+        fix-core.patch
 )
 
 vcpkg_from_github(
@@ -37,12 +40,14 @@ string(COMPARE EQUAL "${VCPKG_CRT_LINKAGE}" static ZLMEDIAKIT_CRT_STATIC)
 vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
     FEATURES
         openssl ENABLE_OPENSSL
+        openssl CMAKE_REQUIRE_FIND_PACKAGE_OpenSSL
         mp4     ENABLE_MP4
         mp4     ENABLE_RTPPROXY
         mp4     ENABLE_HLS
         sctp    ENABLE_SCTP
         webrtc  ENABLE_WEBRTC
     INVERTED_FEATURES
+        openssl CMAKE_DISABLE_FIND_PACKAGE_OpenSSL
 )
 
 vcpkg_cmake_configure(
@@ -67,6 +72,9 @@ vcpkg_cmake_configure(
         -DUSE_SOLUTION_FOLDERS=ON
         -DENABLE_TESTS=OFF
         -DENABLE_MEM_DEBUG=OFF # only valid on Linux
+        -DCMAKE_DISABLE_FIND_PACKAGE_GIT=ON
+        -DCMAKE_DISABLE_FIND_PACKAGE_JEMALLOC=ON
+        -DCMAKE_DISABLE_FIND_PACKAGE_SDL2=ON
         ${FEATURE_OPTIONS}
 )
 

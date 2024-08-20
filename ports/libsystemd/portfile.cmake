@@ -2,7 +2,7 @@ vcpkg_from_github(
   OUT_SOURCE_PATH SOURCE_PATH
   REPO systemd/systemd
   REF "v${VERSION}"
-  SHA512 51728de604c2169d8643718ac72acb8f70f613cfcca9e9abb7dac519f291fa26a16d48f24cae6897356319096cfe8f4d9377743e7870127374f98d432e0c557c
+  SHA512 10da82ee58d3608c41cb0204fdf0227af965b13b8f3716e4f5dea994c236c08a5e31f09ba0d3774cea20a365e1d959c8c865fdeacc82400da55e94ad800e75ba
   PATCHES
     disable-warning-nonnull.patch
     only-libsystemd.patch
@@ -20,10 +20,45 @@ vcpkg_configure_meson(
     -Dmode=release
     -Dstatic-libsystemd=${static}
     -Dtests=false
-    # dependencies
+    # disabled capabilites
     -Ddns-over-tls=false
-    -Dlz4=enabled
     -Dtranslations=false
+    # disabled dependencies
+    -Dacl=disabled
+    -Dapparmor=disabled
+    -Daudit=disabled
+    -Dblkid=disabled
+    -Dbpf-framework=disabled
+    -Dbzip2=disabled
+    -Ddbus=disabled # tests only
+    -Delfutils=disabled
+    -Dfdisk=disabled
+    -Dgcrypt=disabled
+    -Dglib=disabled # tests only
+    -Dgnutls=disabled
+    -Dkmod=disabled
+    -Dlibcurl=disabled
+    -Dlibcryptsetup=disabled
+    -Dlibfido2=disabled
+    -Dlibidn=disabled
+    -Dlibidn2=disabled
+    -Dlibiptc=disabled
+    -Dmicrohttpd=disabled
+    -Dopenssl=disabled
+    -Dp11kit=disabled
+    -Dpam=disabled
+    -Dpcre2=disabled
+    -Dpolkit=disabled
+    -Dpwquality=disabled
+    -Dpasswdqc=disabled
+    -Dseccomp=disabled
+    -Dselinux=disabled
+    -Dtpm2=disabled
+    -Dxenctrl=disabled
+    -Dxkbcommon=disabled
+    -Dzlib=disabled
+    # enabled dependencies
+    -Dlz4=enabled
     -Dxz=enabled
     -Dzstd=enabled
   ADDITIONAL_BINARIES
