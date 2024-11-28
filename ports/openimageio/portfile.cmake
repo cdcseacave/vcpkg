@@ -2,7 +2,7 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO AcademySoftwareFoundation/OpenImageIO
     REF "v${VERSION}"
-    SHA512 c6e53b5484702c66f01490d23f272e597e016b984d54f81e400605bf2a2e1dd7843ce25a7ef51ffbc7ee7089b42e8d73a91699b93cb655b5ca9ef869c9a950f4
+    SHA512 1e24d7ffc3ad65a1fe1f53ae59006de912c0a8d85827d64671fab95350977e22e2d147cf26ffe362646c768747ec11e6f9aeae04ea66030f82ad597adf3135a5
     HEAD_REF master
     PATCHES
         fix-dependencies.patch
@@ -57,6 +57,7 @@ vcpkg_cmake_configure(
         -DUSE_TBB=OFF
         -DLINKSTATIC=OFF # LINKSTATIC breaks library lookup
         -DBUILD_MISSING_FMT=OFF
+        -DINTERNALIZE_FMT=OFF  # carry fmt's msvc utf8 usage requirements
         -DBUILD_MISSING_ROBINMAP=OFF
         -DBUILD_MISSING_DEPS=OFF
         -DSTOP_ON_WARNING=OFF
